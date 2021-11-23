@@ -88,9 +88,9 @@
             where TList : PurgeEntities<TEntity>
             where TEntity : PurgeEntity
         {
-            var results = await this.purger.GetAll<TList>();
-            ColorConsole.WriteLine($"{typeof(TList).Name}: ", (results?.total_count.ToString() ?? string.Empty).Green());
-            var groups = results.items.GroupBy(x => x.name);
+            var results = await this.purger.GetAll<TList, TEntity>();
+            ColorConsole.WriteLine($"\n{typeof(TList).Name}: ", (results?.Count.ToString() ?? string.Empty).Green());
+            var groups = results.GroupBy(x => x.name);
             foreach (var group in groups)
             {
                 var countToRetain = this.settings.ItemsCountToRetain.ContainsKey(group.Key) ? this.settings.ItemsCountToRetain[group.Key] : (this.settings.ItemsCountToRetain.ContainsKey("All") ? this.settings.ItemsCountToRetain["All"] : (this.settings.ItemsCountToRetain.ContainsKey(string.Empty) ? this.settings.ItemsCountToRetain[string.Empty] : -1));
@@ -100,15 +100,15 @@
                     var itemsToRetain = items.Take(countToRetain);
                     foreach (var item in itemsToRetain)
                     {
-                        ColorConsole.WriteLine($"{typeof(TEntity).Name} to retain: ", item.id.ToString(), " / ".Green(), item.name, " / ".Green(), item.created_at.ToString("ddMMMyy hh:mm:ss tt"));
+                        ColorConsole.WriteLine($"{typeof(TEntity).Name} to retain: ", item.name, " / ".Green(), item.created_at.ToString("ddMMMyy hh:mm:ss tt"), " / ".Green(), item.id.ToString());
                     }
 
                     await this.purger.PurgeAll(items.Skip(countToRetain));
                 }
             }
 
-            results = await this.purger.GetAll<TList>();
-            ColorConsole.WriteLine($"{typeof(TList).Name}: ", (results?.total_count.ToString() ?? string.Empty).Green());
+            results = await this.purger.GetAll<TList, TEntity>();
+            ColorConsole.WriteLine($"{typeof(TList).Name}: ", (results?.Count.ToString() ?? string.Empty).Green());
         }
 
         private static void PrintHelp()

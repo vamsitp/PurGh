@@ -10,6 +10,7 @@
         public string Owner { get; set; }
         public string Name { get; set; }
         public string Token { get; set; }
+        public bool? QuiteMode { get; set; }
         public Dictionary<string, int> ItemsCountToRetain { get; set; } = new Dictionary<string, int> { { "All", 5 } };
 
         [JsonIgnore]
@@ -33,13 +34,13 @@
         where T : PurgeEntity
     {
         public int total_count { get; set; }
-        public virtual T[] items { get; set; }
+        public virtual List<T> items { get; set; }
     }
 
     public class Artifacts : PurgeEntities<Artifact>
     {
         [JsonProperty("artifacts")]
-        public override Artifact[] items { get; set; }
+        public override List<Artifact> items { get; set; }
     }
 
     public class Artifact : PurgeEntity
@@ -53,7 +54,7 @@
     public class WorkflowRuns : PurgeEntities<WorkflowRun>
     {
         [JsonProperty("workflow_runs")]
-        public override WorkflowRun[] items { get; set; }
+        public override List<WorkflowRun> items { get; set; }
     }
 
     public class WorkflowRun : PurgeEntity

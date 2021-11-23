@@ -2,6 +2,7 @@
   "Owner": "GH-Org",
   "Name": "GH-Repo",
   "Token": "GH-Token",
+  "QuiteMode": false, // set to true for non-interactive
   "ItemsCountToRetain": {
     "All": 5
     // , "Workflow-1": 2

@@ -1,6 +1,8 @@
 ﻿namespace PurGh
 {
+    using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
 
     using ColoredConsole;
@@ -23,7 +25,7 @@
         private const string ArtifactsEndpoint = "https://api.github.com/repos/{0}/{1}/actions/artifacts";
         private const string WorkflowRunsEndpoint = "https://api.github.com/repos/{0}/{1}/actions/runs";
         private const string AuthHeaderValue = "token {0}";
-
+        private const int DefaultPageCount = 100; //30
         private Settings settings;
         private readonly ILogger<Worker> logger;
 
@@ -43,22 +45,47 @@
             this.logger = logger;
         }
 
-        public async Task<T> GetAll<T>()
+        public async Task<List<TEntity>> GetAll<TList, TEntity>()
+            where TList : PurgeEntities<TEntity>
+            where TEntity : PurgeEntity
         {
-            var result = await this.GetRequest(typeof(T) == typeof(Artifacts) ? artifactsEndpoint : workflowRunsEndpoint).GetJsonAsync<T>();
-            return result;
+            var items = new List<TEntity>();
+            var result = default(TList);
+            var page = 1;
+            do
+            {
+                var url = typeof(TList) == typeof(Artifacts) ? artifactsEndpoint : workflowRunsEndpoint;
+                result = await this.GetRequest(url + $"?page={page++}&per_page={DefaultPageCount}").GetJsonAsync<TList>();
+                ColorConsole.Write($".".Green()); // {result.items.Count}
+                if (result?.items?.Count > 0)
+                {
+                    items.AddRange(result.items);
+                }
+            }
+            while (result.total_count > items.Count); // + DefaultPageCount
+            ColorConsole.WriteLine();
+            return items;
         }
 
         public async Task<List<int>> PurgeAll<T>(IEnumerable<T> items)
             where T : PurgeEntity
         {
             var results = new List<int>();
-            foreach (var item in items)
+            if (items?.Any() == true)
             {
-                var result = await Purge(item);
-                results.Add(result);
+                ColorConsole.Write($"\nPurge ", $"{items.Count()} ({items?.FirstOrDefault()?.name})".Red(), " items", " (Y/N) ".Green());
+                var response = this.settings.QuiteMode == true ? "Y" : Console.ReadLine();
+                if (response.EqualsIgnoreCase("Y"))
+                {
+                    foreach (var item in items)
+                    {
+                        var result = await Purge(item);
+                        results.Add(result);
+                    }
+                }
             }
 
+            ColorConsole.WriteLine();
             return results;
         }
 
@@ -66,6 +93,7 @@
             where T : PurgeEntity
         {
             var result = await this.GetRequest((typeof(T) == typeof(Artifact) ? artifactsEndpoint : workflowRunsEndpoint) + $"/{item.id}").DeleteAsync();
+            ColorConsole.Write($".".Red()); // {result}
             return item.id;
         }
 
