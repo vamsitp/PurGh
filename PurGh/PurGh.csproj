@@ -17,7 +17,7 @@
 		<RepositoryUrl>https://github.com/vamsitp/purgh</RepositoryUrl>
 		<PackageTags>GitHub;Artifacts;Workflows;Actions;Delete;Remove;Purge</PackageTags>
 		<Company>Microsoft</Company>
-		<Version>1.0.0</Version>
+		<Version>1.0.1</Version>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>

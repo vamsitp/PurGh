@@ -14,18 +14,14 @@
 
     internal class PurgeService
     {
+        private static readonly Dictionary<string, string> DefaultHeaders = new Dictionary<string, string> { { "Accept", "application/vnd.github.v3+json" }, { "User-Agent", "request" } };
         private const string AuthHeader = "Authorization";
-
-        private const string AcceptHeader = "Accept";
-        private const string AcceptHeaderValue = "application/vnd.github.v3+json";
-
-        private const string UserAgentHeader = "User-Agent";
-        private const string UserAgentHeaderValue = "request";
+        private const string AuthHeaderValue = "token {0}";
 
         private const string ArtifactsEndpoint = "https://api.github.com/repos/{0}/{1}/actions/artifacts";
         private const string WorkflowRunsEndpoint = "https://api.github.com/repos/{0}/{1}/actions/runs";
-        private const string AuthHeaderValue = "token {0}";
         private const int DefaultPageCount = 100; //30
+
         private Settings settings;
         private readonly ILogger<Worker> logger;
 
@@ -99,7 +95,7 @@
 
         public IFlurlRequest GetRequest(string url)
         {
-            return url.WithHeader(AuthHeader, authHeaderValue).WithHeader(UserAgentHeader, UserAgentHeaderValue).WithHeader(AcceptHeader, AcceptHeaderValue);
+            return url.WithHeader(AuthHeader, authHeaderValue).WithHeaders(DefaultHeaders);
         }
 
         private void Init()

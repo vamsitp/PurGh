@@ -25,21 +25,6 @@
             return input?.Contains(subString, StringComparison.OrdinalIgnoreCase) == true;
         }
 
-        public static string GetFileName(this string file)
-        {
-            return Path.GetFileName(file);
-        }
-
-        public static string GetFileNameWithoutExtension(this string file)
-        {
-            return Path.GetFileNameWithoutExtension(file);
-        }
-
-        public static string GetExtension(this string file)
-        {
-            return Path.GetExtension(file).Trim('.');
-        }
-
         public static string GetFullPath(this string fileName)
         {
             return fileName == null
