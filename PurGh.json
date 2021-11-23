@@ -2,5 +2,11 @@
   "Owner": "GH-Org",
   "Name": "GH-Repo",
   "Token": "GH-Token",
-  "CountToRetain": 1
+  "ItemsCountToRetain": {
+    "All": 5
+    // , "Workflow-1": 2
+    // , "node-app": 2
+    // , "Artifact-1.zip": 2
+    // Provide more names and corresponding retain-count as required (artifact name / workflow name)
+  }
 }

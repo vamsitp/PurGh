@@ -3,6 +3,8 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -39,7 +41,7 @@
             ColorConsole.WriteLine("\nOwner", ": ".Green(), this.settings.Owner.DarkGray());
             ColorConsole.WriteLine("Name", ": ".Green(), this.settings.Name.DarkGray());
             ColorConsole.WriteLine("Token", ": ".Green(), (string.IsNullOrWhiteSpace(this.settings.Token) ? string.Empty : "********************").DarkGray());
-            ColorConsole.WriteLine("CountToRetain", ": ".Green(), this.settings.CountToRetain.ToString().DarkGray());
+            ColorConsole.WriteLine("ItemsCountToRetain", ": ".Green(), string.Join(", ", this.settings.ItemsCountToRetain.Select(x => $"{(string.IsNullOrWhiteSpace(x.Key) ? "All" : x.Key)}:{x.Value}")).TrimEnd(new[] { ',', ' ' }).DarkGray());
 
             do
             {
@@ -66,13 +68,11 @@
                     }
                     else if (key.Equals("a") || key.StartsWithIgnoreCase("artifact"))
                     {
-                        var results = await this.purger.GetArtifacts();
-                        ColorConsole.WriteLine("artifacts: ", results.total_count.ToString().Green());
+                        await this.PurgeAsync<Artifacts, Artifact>();                        
                     }
                     else if (key.Equals("r") || key.StartsWithIgnoreCase("run") || key.Equals("w") || key.StartsWithIgnoreCase("workflow"))
                     {
-                        var results = await this.purger.GetWorkflowRuns();
-                        ColorConsole.WriteLine("runs: ", results.total_count.ToString().Green());
+                        await this.PurgeAsync<WorkflowRuns, WorkflowRun>();
                     }
                 }
                 catch (Exception ex)
@@ -84,15 +84,44 @@
             this.appLifetime.StopApplication();
         }
 
+        private async Task PurgeAsync<TList, TEntity>()
+            where TList : PurgeEntities<TEntity>
+            where TEntity : PurgeEntity
+        {
+            var results = await this.purger.GetAll<TList>();
+            ColorConsole.WriteLine($"{typeof(TList).Name}: ", (results?.total_count.ToString() ?? string.Empty).Green());
+            var groups = results.items.GroupBy(x => x.name);
+            foreach (var group in groups)
+            {
+                var countToRetain = this.settings.ItemsCountToRetain.ContainsKey(group.Key) ? this.settings.ItemsCountToRetain[group.Key] : (this.settings.ItemsCountToRetain.ContainsKey("All") ? this.settings.ItemsCountToRetain["All"] : (this.settings.ItemsCountToRetain.ContainsKey(string.Empty) ? this.settings.ItemsCountToRetain[string.Empty] : -1));
+                if (countToRetain >= 0)
+                {
+                    var items = group.OrderByDescending(r => r.created_at);
+                    var itemsToRetain = items.Take(countToRetain);
+                    foreach (var item in itemsToRetain)
+                    {
+                        ColorConsole.WriteLine($"{typeof(TEntity).Name} to retain: ", item.id.ToString(), " / ".Green(), item.name, " / ".Green(), item.created_at.ToString("ddMMMyy hh:mm:ss tt"));
+                    }
+
+                    await this.purger.PurgeAll(items.Skip(countToRetain));
+                }
+            }
+
+            results = await this.purger.GetAll<TList>();
+            ColorConsole.WriteLine($"{typeof(TList).Name}: ", (results?.total_count.ToString() ?? string.Empty).Green());
+        }
+
         private static void PrintHelp()
         {
             ColorConsole.WriteLine(
                 new[]
                 {
                     "--------------------------------------------------".Green(),
+                    "\nEnter ", "a".Green(), " to purge/delete Workflow-artifacts",
+                    "\nEnter ", "r".Green(), " to purge/delete Workflow-runs",
                     "\nEnter ", "c".Green(), " to clear the console",
                     "\nEnter ", "q".Green(), " to quit",
-                    "\nEnter ", "?".Green(), " to print this help"
+                    "\nEnter ", "?".Green(), " to print this help",
                 });
         }
     }

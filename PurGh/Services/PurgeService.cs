@@ -27,9 +27,9 @@
         private Settings settings;
         private readonly ILogger<Worker> logger;
 
-        private string artifactsEndpoint;
-        private string workflowRunsEndpoint;
-        private string authHeaderValue;
+        internal string artifactsEndpoint;
+        internal string workflowRunsEndpoint;
+        internal string authHeaderValue;
 
         public PurgeService(IOptionsMonitor<Settings> settingsMonitor, ILogger<Worker> logger)
         {
@@ -43,52 +43,30 @@
             this.logger = logger;
         }
 
-        public async Task<Artifacts> GetArtifacts()
+        public async Task<T> GetAll<T>()
         {
-            var result = await this.GetRequest(artifactsEndpoint).GetJsonAsync<Artifacts>();
+            var result = await this.GetRequest(typeof(T) == typeof(Artifacts) ? artifactsEndpoint : workflowRunsEndpoint).GetJsonAsync<T>();
             return result;
         }
 
-        public async Task<List<int>> PurgeArtifacts(IEnumerable<Artifact> artifacts)
+        public async Task<List<int>> PurgeAll<T>(IEnumerable<T> items)
+            where T : PurgeEntity
         {
             var results = new List<int>();
-            foreach (var artifact in artifacts)
+            foreach (var item in items)
             {
-                var result = await PurgeArtifact(artifact);
+                var result = await Purge(item);
                 results.Add(result);
             }
 
             return results;
         }
 
-        public async Task<int> PurgeArtifact(Artifact artifact)
+        public async Task<int> Purge<T>(T item)
+            where T : PurgeEntity
         {
-            var result = await this.GetRequest(artifactsEndpoint + $"/{artifact.id}").DeleteAsync();
-            return artifact.id;
-        }
-
-        public async Task<WorkflowRuns> GetWorkflowRuns()
-        {
-            var result = await this.GetRequest(workflowRunsEndpoint).GetJsonAsync<WorkflowRuns>();
-            return result;
-        }
-
-        public async Task<List<int>> PurgeWorkflowRuns(IEnumerable<WorkflowRun> runs)
-        {
-            var results = new List<int>();
-            foreach (var run in runs)
-            {
-                var result = await PurgeWorkflowRun(run);
-                results.Add(result);
-            }
-
-            return results;
-        }
-
-        public async Task<int> PurgeWorkflowRun(WorkflowRun run)
-        {
-            var result = await this.GetRequest(workflowRunsEndpoint + $"/{run.id}").DeleteAsync();
-            return run.id;
+            var result = await this.GetRequest((typeof(T) == typeof(Artifact) ? artifactsEndpoint : workflowRunsEndpoint) + $"/{item.id}").DeleteAsync();
+            return item.id;
         }
 
         public IFlurlRequest GetRequest(string url)
