@@ -1,2 +1,2 @@
 # PurGh
-Purge GitHub Workflows &amp; Artifacts
+Purge stale GitHub Workflows-runs &amp; Artifacts
