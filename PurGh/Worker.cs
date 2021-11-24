@@ -1,10 +1,8 @@
 ﻿namespace PurGh
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -37,10 +35,11 @@
         {
             ColorConsole.WriteLine("--------------------------------------------------".Green(), "\nLoaded".Gray(), ": ".Green(), this.settings.AppSettingsFile.DarkGray());
             PrintHelp();
-
+            ColorConsole.WriteLine("--------------------------------------------------".Green());
             ColorConsole.WriteLine("\nOwner", ": ".Green(), this.settings.Owner.DarkGray());
             ColorConsole.WriteLine("Name", ": ".Green(), this.settings.Name.DarkGray());
             ColorConsole.WriteLine("Token", ": ".Green(), (string.IsNullOrWhiteSpace(this.settings.Token) ? string.Empty : "********************").DarkGray());
+            ColorConsole.WriteLine("QuiteMode", ": ".Green(), (this.settings.QuiteMode.HasValue ? this.settings.QuiteMode.ToString() : string.Empty).DarkGray());
             ColorConsole.WriteLine("ItemsCountToRetain", ": ".Green(), string.Join(", ", this.settings.ItemsCountToRetain.Select(x => $"{(string.IsNullOrWhiteSpace(x.Key) ? "All" : x.Key)}:{x.Value}")).TrimEnd(new[] { ',', ' ' }).DarkGray());
 
             do
@@ -88,8 +87,7 @@
             where TList : PurgeEntities<TEntity>
             where TEntity : PurgeEntity
         {
-            var results = await this.purger.GetAll<TList, TEntity>();
-            ColorConsole.WriteLine($"\n{typeof(TList).Name}: ", (results?.Count.ToString() ?? string.Empty).Green());
+            var results = await GetItems<TList, TEntity>(true);
             var groups = results.GroupBy(x => x.name);
             foreach (var group in groups)
             {
@@ -98,17 +96,26 @@
                 {
                     var items = group.OrderByDescending(r => r.created_at);
                     var itemsToRetain = items.Take(countToRetain);
+                    ColorConsole.WriteLine($"{typeof(TEntity).Name} ({group.Key}) to retain: ".Green(), $"{itemsToRetain.Count()}".DarkGray());
                     foreach (var item in itemsToRetain)
                     {
-                        ColorConsole.WriteLine($"{typeof(TEntity).Name} to retain: ", item.name, " / ".Green(), item.created_at.ToString("ddMMMyy hh:mm:ss tt"), " / ".Green(), item.id.ToString());
+                        ColorConsole.WriteLine(item.created_at.ToString("ddMMMyy hh:mm:ss tt"), " / ".Green(), item.id.ToString());
                     }
 
                     await this.purger.PurgeAll(items.Skip(countToRetain));
                 }
             }
 
-            results = await this.purger.GetAll<TList, TEntity>();
-            ColorConsole.WriteLine($"{typeof(TList).Name}: ", (results?.Count.ToString() ?? string.Empty).Green());
+            results = await GetItems<TList, TEntity>(false);
+        }
+
+        private async Task<List<TEntity>> GetItems<TList, TEntity>(bool header)
+            where TList : PurgeEntities<TEntity>
+            where TEntity : PurgeEntity
+        {
+            var results = await this.purger.GetAll<TList, TEntity>();
+            ColorConsole.WriteLine(Environment.NewLine, $" {typeof(TList).Name}: ".Black().OnWhite(), $" {(results?.Count.ToString() ?? string.Empty)} ".Black().OnGreen(), header ? Environment.NewLine : string.Empty);
+            return results;
         }
 
         private static void PrintHelp()
