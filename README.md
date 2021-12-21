@@ -12,7 +12,7 @@ Purge stale GitHub Workflows-runs &amp; Artifacts
 > If you get an error stating *Failed to create shell shim for tool 'purgh': Command 'purgh' conflicts with an existing command from another tool*, run: `del %USERPROFILE%\.dotnet\tools\purgh.exe`
 
 #### usage
-> Download [Rankser.json](Rankser.json) to `%USERPROFILE%\Documents`   
+> Download [GhExcel.json](GhExcel.json) to `%USERPROFILE%\Documents`   
 > Update `PurGh.json`
 
 Run `purgh` _<any alternate-path to [PurGh.json](PurGh.json)>_
